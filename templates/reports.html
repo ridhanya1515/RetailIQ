@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block page_title %}Executive Report Center{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Exporter Panel -->
+    <div class="col-lg-5">
+        <div class="glass-card mb-4">
+            <h4 class="mb-3"><i class="bi bi-file-earmark-pdf text-primary"></i> Compile Executive Report</h4>
+            <p class="text-secondary small">Generate self-contained reports summarizing KPIs, customer distributions, ARIMA forecasting outputs, and automated insights. Generated reports are stored and can be shared or downloaded immediately.</p>
+            
+            {% if current_user.role in ['Admin', 'Manager'] %}
+            <form method="POST" action="{{ url_for('reports') }}">
+                <div class="mb-4">
+                    <label for="report_type" class="form-label small text-secondary">Export Document Format</label>
+                    <select name="report_type" id="report_type" class="form-select custom-form-control" required>
+                        <option value="PDF" selected>PDF Executive Summary (ReportLab)</option>
+                        <option value="Excel">Excel Multi-Sheet Workbook (XlsxWriter)</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="btn btn-primary w-100 fw-bold py-2">
+                    <i class="bi bi-file-earmark-plus"></i> Compile & Save Report
+                </button>
+            </form>
+            {% else %}
+            <div class="alert alert-warning border-0 glass-card text-warning" style="border-left: 4px solid var(--accent-amber) !important;">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-lock-fill"></i>
+                    <div><b>Access Denied:</b> Only Admins or Managers can compile reports. Your current role is <b>{{ current_user.role }}</b>.</div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Info Panel -->
+        <div class="glass-card">
+            <h4 class="mb-2"><i class="bi bi-question-circle text-info"></i> Document Scope</h4>
+            <ul class="text-secondary small ps-3 mb-0" style="line-height: 1.8;">
+                <li><b>PDF Format</b> includes structured tabular grids of core metrics, top cohorts, forecast intervals, and high-priority recommendations.</li>
+                <li><b>Excel Workbook</b> splits details across five sheets: KPI Summaries, Cohort Aggregates, Forecast Outputs, Business Insights, and the raw Customer RFM Table.</li>
+            </ul>
+        </div>
+    </div>
+    
+    <!-- Report Log / Download List -->
+    <div class="col-lg-7">
+        <div class="glass-card">
+            <h4 class="mb-3"><i class="bi bi-folder-symlink text-secondary"></i> Compiled Document Repository</h4>
+            <div class="table-responsive">
+                <table class="table custom-table">
+                    <thead>
+                        <tr>
+                            <th>Report Name</th>
+                            <th>Format</th>
+                            <th>Compiled By</th>
+                            <th>Date Created</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if reports %}
+                            {% for r in reports %}
+                            <tr>
+                                <td>
+                                    <i class="bi {% if r.report_type == 'PDF' %}bi-file-pdf text-danger{% else %}bi-file-excel text-success{% endif %} me-2"></i>
+                                    <b>{{ r.report_name }}</b>
+                                </td>
+                                <td>
+                                    <span class="badge {% if r.report_type == 'PDF' %}bg-danger{% else %}bg-success{% endif %}">
+                                        {{ r.report_type }}
+                                    </span>
+                                </td>
+                                <td class="text-light">{{ r.created_by }}</td>
+                                <td class="small text-secondary">{{ r.created_at }}</td>
+                                <td class="text-end">
+                                    <a href="{{ url_for('download_report', report_id=r.id) }}" class="btn btn-outline-primary btn-sm px-3" title="Download Report">
+                                        <i class="bi bi-download"></i> Download
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-secondary">
+                                    No reports have been compiled yet. Select a format and click generate.
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

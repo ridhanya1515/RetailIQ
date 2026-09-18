@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block page_title %}Customer Segmentation Analysis{% endblock %}
+
+{% block content %}
+<!-- Metrics Row -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="glass-card kpi-card blue">
+            <span class="text-secondary small fw-medium">Optimal Cluster Count (K)</span>
+            <div class="kpi-value">{{ optimal_k }}</div>
+            <div class="mt-2 text-secondary small">
+                <i class="bi bi-diagram-3-fill me-1"></i> KMeans Auto-computed
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="glass-card kpi-card teal">
+            <span class="text-secondary small fw-medium">Silhouette Coefficient</span>
+            <div class="kpi-value">{{ silhouette_score }}</div>
+            <div class="mt-2 text-secondary small">
+                <i class="bi bi-bullseye me-1"></i> Clustering density metric
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="glass-card kpi-card purple">
+            <span class="text-secondary small fw-medium">VIP Customers Count</span>
+            <div class="kpi-value">{{ vip_count }}</div>
+            <div class="mt-2 text-secondary small">
+                <i class="bi bi-star-fill text-warning me-1"></i> Highest revenue tier
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="glass-card kpi-card amber">
+            <span class="text-secondary small fw-medium">At Risk/Lost Segment %</span>
+            <div class="kpi-value">{{ at_risk_pct }}%</div>
+            <div class="mt-2 text-secondary small">
+                <i class="bi bi-exclamation-triangle-fill text-danger me-1"></i> Requiring re-engagement
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scatter Plot -->
+<div class="glass-card mb-4">
+    <div id="segment-scatter-plot" class="plotly-graph-div" style="height: 480px;"></div>
+</div>
+
+<!-- Segment Distribution Table -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-12">
+        <div class="glass-card">
+            <h4 class="mb-3"><i class="bi bi-pie-chart text-teal"></i> Cohort Revenue & Share Distribution</h4>
+            <div class="table-responsive">
+                <table class="table custom-table">
+                    <thead>
+                        <tr>
+                            <th>Segment Name</th>
+                            <th class="text-end">Customers</th>
+                            <th class="text-end">Customer Share (%)</th>
+                            <th class="text-end">Total Revenue ($)</th>
+                            <th class="text-end">Revenue Share (%)</th>
+                            <th class="text-end">Avg Recency</th>
+                            <th class="text-end">Avg Frequency</th>
+                            <th class="text-end">Avg Basket Spend ($)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for idx, row in segment_dist.iterrows() %}
+                        <tr>
+                            <td>
+                                <span class="fw-bold" style="color: {% if row.segment == 'VIP Customers' %}#10b981{% elif row.segment == 'Loyal Customers' %}#3b82f6{% elif row.segment == 'Regular Customers' %}#8b5cf6{% elif row.segment == 'Occasional Customers' %}#f59e0b{% else %}#ef4444{% endif %};">
+                                    {{ row.segment }}
+                                </span>
+                            </td>
+                            <td class="text-end text-light">{{ "{:,}".format(row.customer_count|int) }}</td>
+                            <td class="text-end">{{ row.customer_share_pct }}%</td>
+                            <td class="text-end text-success">${{ "{:,.2f}".format(row.total_revenue) }}</td>
+                            <td class="text-end">{{ row.revenue_share_pct }}%</td>
+                            <td class="text-end text-light">{{ row.average_recency }} days</td>
+                            <td class="text-end text-light">{{ row.average_frequency }} orders</td>
+                            <td class="text-end text-info">${{ "{:,.2f}".format(row.average_spend) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Customer List Query Panel -->
+<div class="glass-card">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="m-0"><i class="bi bi-search text-secondary"></i> Customer RFM Registry</h4>
+        <form method="GET" action="{{ url_for('segmentation') }}" class="d-flex gap-2" style="max-width: 300px;">
+            <input type="text" name="search" class="form-control custom-form-control py-1 px-3" placeholder="Search CustomerID..." value="{{ search_query }}">
+            <button type="submit" class="btn btn-secondary py-1 px-3"><i class="bi bi-search"></i></button>
+        </form>
+    </div>
+    
+    <div class="table-responsive">
+        <table class="table custom-table">
+            <thead>
+                <tr>
+                    <th>Customer ID</th>
+                    <th>Assigned Cohort</th>
+                    <th class="text-end">Recency (Days)</th>
+                    <th class="text-end">Frequency (Orders)</th>
+                    <th class="text-end">Monetary Value ($)</th>
+                    <th class="text-end">Basket Average ($)</th>
+                    <th class="text-end">CLV Value ($)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in customers_list %}
+                <tr>
+                    <td><code>{{ row.customer_id }}</code></td>
+                    <td>
+                        <span class="user-badge {{ row.segment }}" style="background-color: {% if row.segment == 'VIP Customers' %}rgba(16, 185, 129, 0.2){% elif row.segment == 'Loyal Customers' %}rgba(59, 130, 246, 0.2){% elif row.segment == 'Regular Customers' %}rgba(139, 92, 246, 0.2){% elif row.segment == 'Occasional Customers' %}rgba(245, 158, 11, 0.2){% else %}rgba(239, 68, 68, 0.2){% endif %}; color: {% if row.segment == 'VIP Customers' %}#10b981{% elif row.segment == 'Loyal Customers' %}#3b82f6{% elif row.segment == 'Regular Customers' %}#8b5cf6{% elif row.segment == 'Occasional Customers' %}#f59e0b{% else %}#ef4444{% endif %};">
+                            {{ row.segment }}
+                        </span>
+                    </td>
+                    <td class="text-end text-light">{{ row.recency }}</td>
+                    <td class="text-end text-light">{{ row.frequency }}</td>
+                    <td class="text-end text-success">${{ "{:,.2f}".format(row.monetary or 0) }}</td>
+                    <td class="text-end text-light">${{ "{:,.2f}".format(row.avg_basket or 0) }}</td>
+                    <td class="text-end text-info">${{ "{:,.2f}".format(row.clv or 0) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Simple Pagination -->
+    <div class="d-flex justify-content-between align-items-center mt-3">
+        <span class="small text-secondary">Showing customers {{ page_offset + 1 }} to {{ page_offset + customers_list|length }}</span>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('segmentation', page=current_page-1, search=search_query) }}" class="btn btn-outline-secondary btn-sm {% if current_page <= 1 %}disabled{% endif %}"><i class="bi bi-chevron-left"></i> Previous</a>
+            <a href="{{ url_for('segmentation', page=current_page+1, search=search_query) }}" class="btn btn-outline-secondary btn-sm {% if customers_list|length < 15 %}disabled{% endif %}">Next <i class="bi bi-chevron-right"></i></a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const scatterData = {{ scatter_plot_json|safe }};
+    if (scatterData.data) {
+        Plotly.newPlot('segment-scatter-plot', scatterData.data, scatterData.layout, {responsive: true});
+    }
+</script>
+{% endblock %}

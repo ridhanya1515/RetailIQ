@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block page_title %}Demand & Sales Forecasting{% endblock %}
+
+{% block content %}
+<!-- Forecasting Configuration -->
+<div class="glass-card mb-4">
+    <form method="GET" action="{{ url_for('forecasting') }}" class="row g-3 align-items-end">
+        <div class="col-md-4">
+            <label for="period_type" class="form-label small text-secondary">Aggregation Period</label>
+            <select name="period_type" id="period_type" class="form-select custom-form-control">
+                <option value="Daily" {% if selected_period == 'Daily' %}selected{% endif %}>Daily Revenue</option>
+                <option value="Weekly" {% if selected_period == 'Weekly' %}selected{% endif %}>Weekly Revenue</option>
+                <option value="Monthly" {% if selected_period == 'Monthly' %}selected{% endif %}>Monthly Revenue</option>
+            </select>
+        </div>
+        
+        <div class="col-md-4">
+            <label for="horizon" class="form-label small text-secondary">Forecast Horizon (Periods)</label>
+            <select name="horizon" id="horizon" class="form-select custom-form-control">
+                <option value="30" {% if selected_horizon == 30 %}selected{% endif %}>30 Periods</option>
+                <option value="60" {% if selected_horizon == 60 %}selected{% endif %}>60 Periods</option>
+                <option value="90" {% if selected_horizon == 90 %}selected{% endif %}>90 Periods</option>
+            </select>
+        </div>
+        
+        <div class="col-md-4 d-flex gap-2">
+            <button type="submit" class="btn btn-primary flex-grow-1 fw-bold"><i class="bi bi-cpu"></i> Execute Prediction Models</button>
+            <a href="{{ url_for('forecasting') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-counterclockwise"></i></a>
+        </div>
+    </form>
+</div>
+
+<!-- KPI Metrics of the Best Model -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="glass-card kpi-card teal">
+            <span class="text-secondary small fw-medium">Auto-Selected Best Model</span>
+            <div class="kpi-value" style="font-size: 1.6rem; margin-top: 1rem;">{{ best_model }}</div>
+            <div class="mt-2 text-secondary small">
+                <i class="bi bi-trophy-fill text-warning me-1"></i> Lowest MAPE selector
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="glass-card kpi-card blue">
+            <span class="text-secondary small fw-medium">Mean Absolute Error (MAE)</span>
+            <div class="kpi-value">${{ "{:,.2f}".format(best_metrics.MAE) }}</div>
+            <div class="mt-2 text-secondary small">
+                Average absolute unit variance
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="glass-card kpi-card purple">
+            <span class="text-secondary small fw-medium">Root Mean Squared Error</span>
+            <div class="kpi-value">${{ "{:,.2f}".format(best_metrics.RMSE) }}</div>
+            <div class="mt-2 text-secondary small">
+                Penalizes outlier variance
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="glass-card kpi-card amber">
+            <span class="text-secondary small fw-medium">Mean Absolute Pct Error</span>
+            <div class="kpi-value">{{ best_metrics.MAPE }}%</div>
+            <div class="mt-2 text-secondary small">
+                Relative percentage accuracy
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Forecast Chart -->
+<div class="glass-card mb-4">
+    <div id="forecast-chart" class="plotly-graph-div" style="height: 440px;"></div>
+</div>
+
+<!-- Model Comparisons & Forecast Details -->
+<div class="row g-4">
+    <!-- Model evaluation comparison -->
+    <div class="col-lg-5">
+        <div class="glass-card h-100">
+            <h4 class="mb-3"><i class="bi bi-bar-chart-steps text-primary"></i> Algorithm Performance Matrix</h4>
+            <p class="text-secondary small">Models are evaluated using backtesting on a 20% holdout test partition of the time series.</p>
+            <div class="table-responsive">
+                <table class="table custom-table">
+                    <thead>
+                        <tr>
+                            <th>Model</th>
+                            <th class="text-end">MAE</th>
+                            <th class="text-end">RMSE</th>
+                            <th class="text-end">MAPE</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for idx, row in comparison_df.iterrows() %}
+                        <tr {% if row.Model == best_model or (best_model == 'Holt-Winters' and row.Model == 'Prophet' and not prophet_available) %}class="table-active border-primary" style="background-color: rgba(59, 130, 246, 0.05) !important;"{% endif %}>
+                            <td>
+                                <b>{{ row.Model }}</b>
+                                {% if row.Model == best_model or (best_model == 'Holt-Winters' and row.Model == 'Prophet' and not prophet_available) %}
+                                <span class="badge bg-success ms-1">Winner</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end text-light">${{ "{:,.2f}".format(row.MAE) }}</td>
+                            <td class="text-end text-light">${{ "{:,.2f}".format(row.RMSE) }}</td>
+                            <td class="text-end text-info">{{ row.MAPE }}%</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            {% if not prophet_available %}
+            <div class="alert alert-warning border-0 small text-warning py-2 mt-3 mb-0" style="background: rgba(245, 158, 11, 0.08); border-left: 3px solid var(--accent-amber) !important;">
+                <i class="bi bi-exclamation-triangle me-1"></i> Prophet library is not compiled on Windows. Fell back to Exponential Smoothing (Holt-Winters) as second comparison model.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Projections list -->
+    <div class="col-lg-7">
+        <div class="glass-card h-100">
+            <h4 class="mb-3"><i class="bi bi-calendar-range text-success"></i> Raw Projections (First 15 Periods)</h4>
+            <div class="table-responsive">
+                <table class="table custom-table">
+                    <thead>
+                        <tr>
+                            <th>Period Date</th>
+                            <th class="text-end">Predicted Revenue ($)</th>
+                            <th class="text-end">Lower Boundary ($)</th>
+                            <th class="text-end">Upper Boundary ($)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for idx, row in forecast_list.iterrows() %}
+                        <tr>
+                            <td><code>{{ row.Date }}</code></td>
+                            <td class="text-end text-success fw-semibold">${{ "{:,.2f}".format(row.Forecast) }}</td>
+                            <td class="text-end text-secondary">${{ "{:,.2f}".format(row.Lower_CI) }}</td>
+                            <td class="text-end text-secondary">${{ "{:,.2f}".format(row.Upper_CI) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const forecastChartData = {{ forecast_chart_json|safe }};
+    if (forecastChartData.data) {
+        Plotly.newPlot('forecast-chart', forecastChartData.data, forecastChartData.layout, {responsive: true});
+    }
+</script>
+{% endblock %}

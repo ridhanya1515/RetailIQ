@@ -1,0 +1,309 @@
+/* RetailIQ SaaS Theme Style System */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
+
+:root {
+    /* Theme color variables - Dark Mode by default */
+    --bg-primary: #0b0f19;
+    --bg-secondary: #111827;
+    --bg-card: rgba(21, 29, 45, 0.7);
+    --bg-sidebar: #0f1624;
+    --text-primary: #f9fafb;
+    --text-secondary: #9ca3af;
+    --border-color: rgba(255, 255, 255, 0.08);
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    
+    /* Neon Accents */
+    --accent-blue: #3b82f6;
+    --accent-blue-glow: rgba(59, 130, 246, 0.15);
+    --accent-teal: #10b981;
+    --accent-teal-glow: rgba(16, 185, 129, 0.15);
+    --accent-purple: #8b5cf6;
+    --accent-amber: #f59e0b;
+    --accent-red: #ef4444;
+}
+
+[data-theme="light"] {
+    /* Light Mode overrides */
+    --bg-primary: #f3f4f6;
+    --bg-secondary: #ffffff;
+    --bg-card: rgba(255, 255, 255, 0.85);
+    --bg-sidebar: #1e293b;
+    --text-primary: #111827;
+    --text-secondary: #4b5563;
+    --border-color: rgba(0, 0, 0, 0.08);
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    margin: 0;
+    transition: background-color 0.3s, color 0.3s;
+    overflow-x: hidden;
+}
+
+h1, h2, h3, h4, h5, h6, .card-title, .logo-text {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 600;
+}
+
+/* Glassmorphism Cards */
+.glass-card {
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: var(--shadow-lg);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.glass-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.4);
+    border-color: rgba(59, 130, 246, 0.3);
+}
+
+/* Professional Sidebar Layout */
+.wrapper {
+    display: flex;
+    align-items: stretch;
+    min-height: 100vh;
+}
+
+#sidebar {
+    min-width: 260px;
+    max-width: 260px;
+    background-color: var(--bg-sidebar);
+    color: #ffffff;
+    transition: all 0.3s;
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    z-index: 1000;
+}
+
+#sidebar .sidebar-header {
+    padding: 20px;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.logo-text {
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    background: linear-gradient(45deg, #3b82f6, #10b981);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+#sidebar ul.components {
+    padding: 20px 0;
+}
+
+#sidebar ul p {
+    color: #fff;
+    padding: 10px;
+}
+
+#sidebar ul li a {
+    padding: 12px 20px;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    color: #9ca3af;
+    text-decoration: none;
+    transition: all 0.3s;
+    font-weight: 500;
+    border-left: 3px solid transparent;
+}
+
+#sidebar ul li a i {
+    margin-right: 15px;
+    font-size: 1.1rem;
+    width: 20px;
+    text-align: center;
+}
+
+#sidebar ul li a:hover, #sidebar ul li.active > a {
+    color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-left-color: var(--accent-blue);
+}
+
+#content {
+    width: 100%;
+    padding: 30px;
+    min-height: 100vh;
+    transition: all 0.3s;
+}
+
+/* User Profile Widget in Sidebar Footer */
+.sidebar-footer {
+    margin-top: auto;
+    padding: 20px;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-top: 1px solid var(--border-color);
+}
+
+.user-badge {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    border-radius: 12px;
+    font-weight: 600;
+}
+
+.user-badge.Admin { background-color: var(--accent-red); color: white; }
+.user-badge.Manager { background-color: var(--accent-amber); color: #111; }
+.user-badge.Analyst { background-color: var(--accent-blue); color: white; }
+
+/* Interactive KPI Cards */
+.kpi-card {
+    position: relative;
+    overflow: hidden;
+}
+
+.kpi-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 4px;
+    height: 100%;
+}
+
+.kpi-card.blue::after { background: var(--accent-blue); }
+.kpi-card.teal::after { background: var(--accent-teal); }
+.kpi-card.purple::after { background: var(--accent-purple); }
+.kpi-card.amber::after { background: var(--accent-amber); }
+
+.kpi-value {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-top: 0.5rem;
+    font-family: 'Outfit', sans-serif;
+    letter-spacing: -0.5px;
+}
+
+.kpi-trend {
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.kpi-trend.up { color: var(--accent-teal); }
+.kpi-trend.down { color: var(--accent-red); }
+
+/* Table styling for dark theme */
+.custom-table {
+    color: var(--text-primary);
+    border-color: var(--border-color);
+}
+
+.custom-table thead th {
+    background-color: rgba(0,0,0,0.15);
+    color: var(--text-primary);
+    font-weight: 600;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.custom-table tbody tr {
+    background-color: transparent;
+    transition: background-color 0.2s;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.custom-table tbody tr:hover {
+    background-color: rgba(255, 255, 255, 0.02) !important;
+}
+
+.custom-table tbody td {
+    color: var(--text-secondary);
+    padding: 12px;
+}
+
+/* Dark mode toggle switch */
+.theme-toggle {
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    background-color: rgba(255,255,255,0.05);
+    border: 1px solid var(--border-color);
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-primary);
+    transition: all 0.2s;
+}
+
+.theme-toggle:hover {
+    background-color: rgba(59, 130, 246, 0.1);
+    border-color: var(--accent-blue);
+}
+
+/* Custom Alert styles */
+.alert-custom {
+    background: var(--bg-card);
+    border-left: 4px solid var(--accent-blue);
+    color: var(--text-primary);
+}
+
+/* Form Styles */
+.custom-form-control {
+    background-color: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary) !important;
+    border-radius: 8px;
+    padding: 10px 15px;
+    transition: all 0.2s;
+}
+
+.custom-form-control:focus {
+    background-color: rgba(0, 0, 0, 0.3);
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 0.25rem var(--accent-blue-glow);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Custom styling for login/register pages */
+.auth-wrapper {
+    min-height: calc(100vh - 110px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 0;
+}
+
+.auth-card {
+    width: 100%;
+    max-width: 440px;
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+}

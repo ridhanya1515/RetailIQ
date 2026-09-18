@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Register - RetailIQ{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+    <div class="glass-card auth-card shadow-lg p-5">
+        <div class="text-center mb-4">
+            <h1 class="logo-text m-0 mb-1">RETAILIQ</h1>
+            <p class="text-secondary small">AI-Powered Retail Intelligence Platform</p>
+        </div>
+        
+        <h4 class="mb-4 text-center">Create Account</h4>
+        
+        <form method="POST" action="{{ url_for('register') }}">
+            <div class="mb-3">
+                <label for="username" class="form-label small text-secondary">Username</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-transparent border-end-0 border-secondary-subtle" style="border-color: var(--border-color) !important;"><i class="bi bi-person text-secondary"></i></span>
+                    <input type="text" class="form-control custom-form-control border-start-0" id="username" name="username" required placeholder="Choose username">
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="role" class="form-label small text-secondary">Organization Role</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-transparent border-end-0 border-secondary-subtle" style="border-color: var(--border-color) !important;"><i class="bi bi-shield-check text-secondary"></i></span>
+                    <select class="form-select custom-form-control border-start-0" id="role" name="role" required>
+                        <option value="" disabled selected>Select your role</option>
+                        <option value="Analyst">Analyst</option>
+                        <option value="Manager">Manager</option>
+                        <option value="Admin">Admin</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <label for="password" class="form-label small text-secondary">Password</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-transparent border-end-0 border-secondary-subtle" style="border-color: var(--border-color) !important;"><i class="bi bi-lock text-secondary"></i></span>
+                    <input type="password" class="form-control custom-form-control border-start-0" id="password" name="password" required placeholder="Choose password">
+                </div>
+            </div>
+            
+            <button type="submit" class="btn btn-success w-100 py-2.5 mb-3 fw-bold" style="background: linear-gradient(135deg, var(--accent-teal), var(--accent-blue)); border: none; border-radius: 8px;">
+                Register Account
+            </button>
+            
+            <div class="text-center">
+                <span class="small text-secondary">Already registered? <a href="{{ url_for('login') }}" class="text-decoration-none fw-semibold" style="color: var(--accent-teal);">Sign In instead</a></span>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

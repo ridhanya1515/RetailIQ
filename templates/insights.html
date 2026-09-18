@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block page_title %}Automated Intelligence Panel{% endblock %}
+
+{% block content %}
+<!-- Filtering Bar for Insights -->
+<div class="glass-card mb-4">
+    <form method="GET" action="{{ url_for('insights') }}" class="row g-3 align-items-end">
+        <div class="col-md-5">
+            <label for="category_filter" class="form-label small text-secondary">Insight Category</label>
+            <select name="category" id="category_filter" class="form-select custom-form-control">
+                <option value="">All Categories</option>
+                {% for cat in categories %}
+                <option value="{{ cat }}" {% if selected_category == cat %}selected{% endif %}>{{ cat }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label for="importance_filter" class="form-label small text-secondary">Importance</label>
+            <select name="importance" id="importance_filter" class="form-select custom-form-control">
+                <option value="">All Priorities</option>
+                <option value="High" {% if selected_importance == 'High' %}selected{% endif %}>High Importance</option>
+                <option value="Medium" {% if selected_importance == 'Medium' %}selected{% endif %}>Medium Importance</option>
+                <option value="Low" {% if selected_importance == 'Low' %}selected{% endif %}>Low Importance</option>
+            </select>
+        </div>
+        <div class="col-md-3 d-flex gap-2">
+            <button type="submit" class="btn btn-primary flex-grow-1 fw-bold"><i class="bi bi-filter-circle"></i> Filter Insights</button>
+            <a href="{{ url_for('insights') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-counterclockwise"></i></a>
+        </div>
+    </form>
+</div>
+
+<!-- Insights Card Wall -->
+<div class="row g-4">
+    {% if insights %}
+        {% for ins in insights %}
+        <div class="col-md-6">
+            <div class="glass-card h-100" style="border-left: 4px solid {% if ins.importance == 'High' %}var(--accent-red){% elif ins.importance == 'Medium' %}var(--accent-amber){% else %}var(--accent-teal){% endif %} !important;">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <span class="badge" style="background-color: rgba(255, 255, 255, 0.05); color: var(--text-secondary); border: 1px solid var(--border-color);">
+                        {{ ins.category }}
+                    </span>
+                    <span class="badge {% if ins.importance == 'High' %}bg-danger{% elif ins.importance == 'Medium' %}bg-warning text-dark{% else %}bg-success{% endif %}">
+                        {{ ins.importance }} Priority
+                    </span>
+                </div>
+                
+                <h4 class="mb-2 text-light">{{ ins.title }}</h4>
+                <p class="text-secondary small mb-4" style="line-height: 1.6;">{{ ins.description }}</p>
+                
+                <div class="d-flex justify-content-between align-items-center mt-auto pt-3 border-top" style="border-color: var(--border-color) !important;">
+                    <span class="small text-secondary"><i class="bi bi-cpu me-1"></i> Auto-generated recommendation</span>
+                    <span class="small text-secondary"><i class="bi bi-clock me-1"></i> Active</span>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="col-12 text-center py-5">
+            <div class="glass-card py-5">
+                <i class="bi bi-lightbulb-off fs-1 text-secondary"></i>
+                <h4 class="text-secondary mt-3">No matching intelligence insights found</h4>
+                <p class="text-secondary small">Try adjusting your filters or upload a fresh transactions dataset.</p>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

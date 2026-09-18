@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}RetailIQ - AI Retail Intelligence{% endblock %}</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/style.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    
+    <!-- Custom Style Sheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <!-- Plotly.js CDN for interactive charts -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <div class="wrapper">
+        <!-- Sidebar Navigation -->
+        {% if current_user.is_authenticated %}
+        <nav id="sidebar">
+            <div class="sidebar-header d-flex align-items-center justify-content-between">
+                <span class="logo-text">RETAILIQ</span>
+            </div>
+            
+            <ul class="list-unstyled components">
+                <li class="{% if request.path == '/dashboard' %}active{% endif %}">
+                    <a href="{{ url_for('dashboard') }}">
+                        <i class="bi bi-grid-1x2-fill"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="{% if request.path == '/upload' %}active{% endif %}">
+                    <a href="{{ url_for('upload') }}">
+                        <i class="bi bi-cloud-arrow-up-fill"></i>
+                        <span>Upload Dataset</span>
+                    </a>
+                </li>
+                <li class="{% if request.path == '/segmentation' %}active{% endif %}">
+                    <a href="{{ url_for('segmentation') }}">
+                        <i class="bi bi-people-fill"></i>
+                        <span>Segmentation</span>
+                    </a>
+                </li>
+                <li class="{% if request.path == '/forecasting' %}active{% endif %}">
+                    <a href="{{ url_for('forecasting') }}">
+                        <i class="bi bi-graph-up-arrow"></i>
+                        <span>Forecasting</span>
+                    </a>
+                </li>
+                <li class="{% if request.path == '/insights' %}active{% endif %}">
+                    <a href="{{ url_for('insights') }}">
+                        <i class="bi bi-lightbulb-fill"></i>
+                        <span>Business Insights</span>
+                    </a>
+                </li>
+                <li class="{% if request.path == '/reports' %}active{% endif %}">
+                    <a href="{{ url_for('reports') }}">
+                        <i class="bi bi-file-earmark-bar-graph-fill"></i>
+                        <span>Reports</span>
+                    </a>
+                </li>
+            </ul>
+            
+            <!-- User Status in Footer -->
+            <div class="sidebar-footer">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <i class="bi bi-person-circle fs-5"></i>
+                    <div>
+                        <div class="fw-bold text-truncate" style="max-width: 150px;">{{ current_user.username }}</div>
+                        <span class="user-badge {{ current_user.role }}">{{ current_user.role }}</span>
+                    </div>
+                </div>
+                <a href="{{ url_for('logout') }}" class="btn btn-outline-danger btn-sm w-100 mt-2">
+                    <i class="bi bi-box-arrow-right"></i> Logout
+                </a>
+            </div>
+        </nav>
+        {% endif %}
+        
+        <!-- Main Content Wrapper -->
+        <div id="content" class="d-flex flex-column">
+            {% if current_user.is_authenticated %}
+            <!-- Top Navigation bar -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="d-flex align-items-center gap-3">
+                    <button type="button" id="sidebarCollapse" class="btn btn-outline-secondary d-md-none">
+                        <i class="bi bi-list"></i>
+                    </button>
+                    <h2 class="m-0 text-capitalize">{% block page_title %}Overview{% endblock %}</h2>
+                </div>
+                
+                <div class="d-flex align-items-center gap-3">
+                    <!-- Theme Toggle Toggle Switch -->
+                    <div class="theme-toggle" id="theme-toggle-btn" title="Toggle Light/Dark Theme">
+                        <i class="bi bi-sun-fill"></i>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <!-- Unauthenticated Top bar (Theme toggle only) -->
+            <div class="d-flex justify-content-end align-items-center mb-2">
+                <div class="theme-toggle" id="theme-toggle-btn" title="Toggle Light/Dark Theme">
+                    <i class="bi bi-sun-fill"></i>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Flask Flashed Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="flash-messages">
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show glass-card border-0 mb-4" role="alert" style="border-left: 4px solid var(--accent-{% if category == 'error' %}red{% elif category == 'success' %}teal{% else %}blue{% endif %}) !important;">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="bi {% if category == 'success' %}bi-check-circle-fill text-success{% elif category == 'error' %}bi-exclamation-triangle-fill text-danger{% else %}bi-info-circle-fill text-info{% endif %}"></i>
+                                    <div>{{ message }}</div>
+                                </div>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+            
+            <!-- Page Specific Content -->
+            <div class="flex-grow-1">
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bootstrap 5 Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom Main JS -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

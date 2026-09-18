@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block page_title %}Executive Analytics Dashboard{% endblock %}
+
+{% block content %}
+<!-- Filtering Panel -->
+<div class="glass-card mb-4">
+    <form method="GET" action="{{ url_for('dashboard') }}" class="row g-3 align-items-end">
+        <div class="col-md-3">
+            <label for="country_filter" class="form-label small text-secondary">Market / Country</label>
+            <select name="country" id="country_filter" class="form-select custom-form-control">
+                <option value="">All Markets</option>
+                {% for country in countries %}
+                <option value="{{ country }}" {% if selected_country == country %}selected{% endif %}>{{ country }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label for="start_date" class="form-label small text-secondary">Start Date</label>
+            <input type="date" name="start_date" id="start_date" class="form-control custom-form-control" value="{{ start_date }}">
+        </div>
+        <div class="col-md-3">
+            <label for="end_date" class="form-label small text-secondary">End Date</label>
+            <input type="date" name="end_date" id="end_date" class="form-control custom-form-control" value="{{ end_date }}">
+        </div>
+        <div class="col-md-3 d-flex gap-2">
+            <button type="submit" class="btn btn-primary flex-grow-1 fw-bold"><i class="bi bi-filter"></i> Apply Filters</button>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary" title="Reset Filters"><i class="bi bi-arrow-counterclockwise"></i></a>
+        </div>
+    </form>
+</div>
+
+<!-- KPI Cards -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="glass-card kpi-card blue">
+            <span class="text-secondary small fw-medium">Total Revenue</span>
+            <div class="kpi-value">${{ "{:,.2f}".format(kpis.total_revenue) }}</div>
+            <div class="mt-2">
+                <span class="kpi-trend {% if kpis.rev_growth_mom >= 0 %}up{% else %}down{% endif %}">
+                    <i class="bi {% if kpis.rev_growth_mom >= 0 %}bi-caret-up-fill{% else %}bi-caret-down-fill{% endif %}"></i>
+                    {{ kpis.rev_growth_mom|abs }}%
+                </span>
+                <span class="text-secondary small ms-1">Month-over-Month</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="glass-card kpi-card teal">
+            <span class="text-secondary small fw-medium">Total Invoiced Orders</span>
+            <div class="kpi-value">{{ "{:,}".format(kpis.total_orders) }}</div>
+            <div class="mt-2 text-secondary small">
+                <i class="bi bi-receipt-cutoff me-1"></i> Unique transactions
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="glass-card kpi-card purple">
+            <span class="text-secondary small fw-medium">Active Customer Base</span>
+            <div class="kpi-value">{{ "{:,}".format(kpis.total_customers) }}</div>
+            <div class="mt-2">
+                <span class="kpi-trend {% if kpis.cust_growth_mom >= 0 %}up{% else %}down{% endif %}">
+                    <i class="bi {% if kpis.cust_growth_mom >= 0 %}bi-caret-up-fill{% else %}bi-caret-down-fill{% endif %}"></i>
+                    {{ kpis.cust_growth_mom|abs }}%
+                </span>
+                <span class="text-secondary small ms-1">Month-over-Month</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="glass-card kpi-card amber">
+            <span class="text-secondary small fw-medium">Average Order Value (AOV)</span>
+            <div class="kpi-value">${{ "{:,.2f}".format(kpis.avg_order_value) }}</div>
+            <div class="mt-2 text-secondary small">
+                <i class="bi bi-cart-check-fill me-1"></i> Spend per invoice
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Grid -->
+<div class="row g-4 mb-4">
+    <div class="col-lg-8">
+        <div class="glass-card">
+            <div id="revenue-trend-chart" class="plotly-graph-div" style="height: 380px;"></div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="glass-card">
+            <div id="country-revenue-chart" class="plotly-graph-div" style="height: 380px;"></div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-lg-6">
+        <div class="glass-card">
+            <div id="top-products-chart" class="plotly-graph-div" style="height: 380px;"></div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="glass-card">
+            <div id="day-hour-heatmap" class="plotly-graph-div" style="height: 380px;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Products Table Comparison -->
+<div class="row g-4">
+    <!-- Top 5 Products -->
+    <div class="col-lg-6">
+        <div class="glass-card">
+            <h4 class="mb-3 text-success"><i class="bi bi-graph-up text-success"></i> Top Performing Products</h4>
+            <div class="table-responsive">
+                <table class="table custom-table">
+                    <thead>
+                        <tr>
+                            <th>Stock Code</th>
+                            <th>Description</th>
+                            <th class="text-end">Units Sold</th>
+                            <th class="text-end">Revenue ($)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for idx, row in top_products.iterrows() %}
+                        <tr>
+                            <td><code>{{ row.StockCode }}</code></td>
+                            <td>{{ row.Description }}</td>
+                            <td class="text-end text-light">{{ "{:,}".format(row.Quantity|int) }}</td>
+                            <td class="text-end text-success">${{ "{:,.2f}".format(row.Revenue) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bottom 5 Products -->
+    <div class="col-lg-6">
+        <div class="glass-card">
+            <h4 class="mb-3 text-danger"><i class="bi bi-graph-down text-danger"></i> Low Performing Items</h4>
+            <div class="table-responsive">
+                <table class="table custom-table">
+                    <thead>
+                        <tr>
+                            <th>Stock Code</th>
+                            <th>Description</th>
+                            <th class="text-end">Units Sold</th>
+                            <th class="text-end">Revenue ($)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for idx, row in bottom_products.iterrows() %}
+                        <tr>
+                            <td><code>{{ row.StockCode }}</code></td>
+                            <td>{{ row.Description }}</td>
+                            <td class="text-end text-light">{{ "{:,}".format(row.Quantity|int) }}</td>
+                            <td class="text-end text-danger">${{ "{:,.2f}".format(row.Revenue) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Parse the JSON data passed from Flask view
+    const revTrendData = {{ rev_trend_chart_json|safe }};
+    const countryData = {{ country_revenue_chart_json|safe }};
+    const topProdData = {{ top_products_chart_json|safe }};
+    const heatmapData = {{ day_hour_heatmap_json|safe }};
+
+    // Render interactive Plotly charts
+    if (revTrendData.data) {
+        Plotly.newPlot('revenue-trend-chart', revTrendData.data, revTrendData.layout, {responsive: true});
+    }
+    if (countryData.data) {
+        Plotly.newPlot('country-revenue-chart', countryData.data, countryData.layout, {responsive: true});
+    }
+    if (topProdData.data) {
+        Plotly.newPlot('top-products-chart', topProdData.data, topProdData.layout, {responsive: true});
+    }
+    if (heatmapData.data) {
+        Plotly.newPlot('day-hour-heatmap', heatmapData.data, heatmapData.layout, {responsive: true});
+    }
+</script>
+{% endblock %}
