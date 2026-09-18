@@ -72,8 +72,61 @@ def roles_required(*roles):
 # FILE UTILITIES
 # ==========================================
 
+def ensure_dataset_loaded():
+    """Lazily load and preprocess dataset if cache is missing."""
+    processed_path = os.path.join(Config.PROCESSED_DATA_DIR, "cleaned_transactions.csv")
+    if not os.path.exists(processed_path):
+        logger.info("Transactions cache not found. Lazily initializing data source...")
+        try:
+            raw_path = download_uci_dataset()
+            df_clean = preprocess_dataset(raw_path)
+            
+            # Seed loaded datasets table
+            row_cnt = len(df_clean)
+            execute_db(
+                'INSERT INTO uploaded_datasets (filename, filepath, row_count, status) VALUES (?, ?, ?, ?)',
+                (os.path.basename(raw_path), raw_path, row_cnt, 'Processed')
+            )
+            
+            # 1. Customer Segmentation
+            logger.info("Running initial Customer Segmentation KMeans Clustering...")
+            rfm = compute_rfm_features(df_clean)
+            rfm_segmented, optimal_k, stats = perform_customer_segmentation(rfm)
+            
+            conn = get_db_connection()
+            for _, row in rfm_segmented.iterrows():
+                conn.execute('''
+                    INSERT INTO customer_segments (customer_id, recency, frequency, monetary, clv, avg_basket, segment)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                ''', (row['CustomerID'], int(row['Recency']), int(row['Frequency']), float(row['Monetary']), 
+                      float(row['CLV']), float(row['AverageBasketSize']), row['segment']))
+            
+            # 2. Demand Forecasting
+            logger.info("Running initial Demand Forecasting ARIMA models...")
+            forecast_results = generate_demand_forecast(df_clean, period_type='Daily', forecast_days=30)
+            best_fc = forecast_results['forecast']
+            best_model_name = forecast_results['best_model']
+            
+            for _, row in best_fc.iterrows():
+                conn.execute('''
+                    INSERT INTO forecast_results (forecast_date, forecasted_value, confidence_lower, confidence_upper, model_name, period_type)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                ''', (pd.to_datetime(row['Date']).strftime('%Y-%m-%d'), float(row['Forecast']), 
+                      float(row['Lower_CI']), float(row['Upper_CI']), best_model_name, 'Daily'))
+                      
+            conn.commit()
+            conn.close()
+            
+            # 3. Dynamic Business Insights
+            generate_and_save_insights(df_clean, rfm_segmented)
+            
+            logger.info("Lazy RetailIQ dataset initialization successfully completed.")
+        except Exception as e:
+            logger.error("Error running lazy data initialization: %s", str(e), exc_info=True)
+
 def get_active_transactions():
-    """Load the preprocessed transactions CSV file."""
+    """Load the preprocessed transactions CSV file, triggering lazy load if missing."""
+    ensure_dataset_loaded()
     processed_path = os.path.join(Config.PROCESSED_DATA_DIR, "cleaned_transactions.csv")
     if os.path.exists(processed_path):
         # Read file with memory efficiency
@@ -607,64 +660,13 @@ def download_report(report_id):
 # ==========================================
 
 def app_startup_init():
-    """Run data ingestion and initial computations on boot."""
+    """Run lightweight schema initialization on boot for immediate startup."""
     logger.info("Initializing database schema...")
     init_db()
-    
-    # Verify dataset exists, otherwise download or synthesize
-    processed_path = os.path.join(Config.PROCESSED_DATA_DIR, "cleaned_transactions.csv")
-    if not os.path.exists(processed_path):
-        logger.info("Transactions cache not found. Setting up data source...")
-        try:
-            raw_path = download_uci_dataset()
-            df_clean = preprocess_dataset(raw_path)
-            
-            # Seed loaded datasets table
-            row_cnt = len(df_clean)
-            execute_db(
-                'INSERT INTO uploaded_datasets (filename, filepath, row_count, status) VALUES (?, ?, ?, ?)',
-                (os.path.basename(raw_path), raw_path, row_cnt, 'Processed')
-            )
-            
-            # 1. Customer Segmentation
-            logger.info("Running initial Customer Segmentation KMeans Clustery...")
-            rfm = compute_rfm_features(df_clean)
-            rfm_segmented, optimal_k, stats = perform_customer_segmentation(rfm)
-            
-            conn = get_db_connection()
-            for _, row in rfm_segmented.iterrows():
-                conn.execute('''
-                    INSERT INTO customer_segments (customer_id, recency, frequency, monetary, clv, avg_basket, segment)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
-                ''', (row['CustomerID'], int(row['Recency']), int(row['Frequency']), float(row['Monetary']), 
-                      float(row['CLV']), float(row['AverageBasketSize']), row['segment']))
-            
-            # 2. Demand Forecasting
-            logger.info("Running initial Demand Forecasting ARIMA models...")
-            forecast_results = generate_demand_forecast(df_clean, period_type='Daily', forecast_days=30)
-            best_fc = forecast_results['forecast']
-            best_model_name = forecast_results['best_model']
-            
-            for _, row in best_fc.iterrows():
-                conn.execute('''
-                    INSERT INTO forecast_results (forecast_date, forecasted_value, confidence_lower, confidence_upper, model_name, period_type)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                ''', (pd.to_datetime(row['Date']).strftime('%Y-%m-%d'), float(row['Forecast']), 
-                      float(row['Lower_CI']), float(row['Upper_CI']), best_model_name, 'Daily'))
-                      
-            conn.commit()
-            conn.close()
-            
-            # 3. Dynamic Business Insights
-            generate_and_save_insights(df_clean, rfm_segmented)
-            
-            logger.info("Startup RetailIQ intelligence initialization successfully completed.")
-        except Exception as e:
-            logger.error("Error running initial data pipe: %s", str(e), exc_info=True)
 
 # Run initialization before starting the server
 app_startup_init()
 
-if __name__ == '__main__':
-    # Run server locally on default port 5000
-    app.run(host='0.0.0.0', port=5000, debug=True)
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=True)
